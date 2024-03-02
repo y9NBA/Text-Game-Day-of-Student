@@ -1,33 +1,49 @@
-import sqlite3 as sql
+from models import dict_classes
+from peewee import SqliteDatabase, Model, ForeignKeyField, TextField, IntegerField
+
+db = SqliteDatabase("sqlite_peewee_db.db")
 
 
-class Database:
-    
-    # Подключение к бд
-    def __init__(self, db_file):
-        self.connection = sql.connect(db_file)
-        self.cursor = self.connection.cursor()
-
-    async def user_exists(self, user_id):
-        with self.connection:
-            result = self.cursor.execute("SELECT * FROM User WHERE userID = (?)",
-                                         (user_id,)).fetchmany(1)
-            return True if len(result) != 0 else False
-        
-    async def add_user(self, user_id, login):
-        with self.connection:
-            return self.cursor.execute("INSERT INTO 'User' ('userID', 'login', 'roleID') VALUES ((?), (?), (?))",
-                                       (user_id, login, 2))
-
-    async def update_userlogin(self, user_id, new_login):
-        with self.connection:
-            return self.cursor.execute(f"UPDATE User SET login = (?) WHERE userID = (?)",
-                                       (new_login, user_id))
-
-    async def get_userlogin(self, user_id):
-        with self.connection:
-            return self.cursor.execute("SELECT login FROM User WHERE userID = (?)",
-                                       (user_id,)).fetchmany(1).pop(0)[0]
+class DB(Model):
+    class Meta:
+        database = db
 
 
-DB = Database("sqlite_db.db")
+class Role(DB):
+    name = TextField()
+
+
+class Specialization(DB):
+    name = TextField()
+
+
+class User(DB):
+    login = TextField()
+    usertgID = IntegerField()
+    role = ForeignKeyField(Role)
+    specialization = ForeignKeyField(Specialization)
+
+    async def exists(self):
+        pass
+
+
+db.connect()
+
+if len(db.get_tables()) == 3:
+    print("[~] БД уже создана")
+else:
+    db.create_tables([Role, Specialization, User], safe=True)
+    print("[~] Таблицы БД были созданы")
+
+db.close()
+
+
+for x in dict_classes:
+    class_u = Specialization.get_or_create(name=x)
+    print(f"[+] Запись 'role' [{class_u[0].id} {class_u[0].name}] " + ("добавлена" if class_u[1] else "обновлена"))
+
+for x in ["Админ", "Игрок"]:
+    role_u = Role.get_or_create(name=x)
+    print(f"[+] Запись 'class' [{role_u[0].id} {role_u[0].name}] " + ("добавлена" if role_u[1] else "обновлена"))
+
+print("[~] БД готова к работе")
