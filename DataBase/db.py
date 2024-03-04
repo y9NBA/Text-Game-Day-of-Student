@@ -1,4 +1,4 @@
-from .models import dict_classes
+from DataBase.models import dict_classes
 from peewee import SqliteDatabase, Model, ForeignKeyField, TextField, IntegerField
 
 db = SqliteDatabase("DataBase/sqlite_peewee_db.db")
