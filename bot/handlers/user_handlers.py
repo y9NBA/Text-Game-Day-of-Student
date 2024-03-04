@@ -22,30 +22,28 @@ async def cmd_start(msg: Message, state: FSMContext) -> None:
 async def start_menu(call: CallbackQuery | Message, state: FSMContext):
     await state.finish()
     reply_text = title_text("Главное меню")
+    reply_mark = get_start_kb()
     # exist = await DB.user_exists(call.from_user.id)
     exist = bool(User.get_or_none(usertgID=call.from_user.id) is None)
     if exist:
         reply_text += "\n"
         reply_text += "Нажмите на кнопку \"Логин\" и введите свой логин для игры."
-    await call.bot.send_message(call.from_user.id, text=reply_text, reply_markup=get_start_kb())
+        reply_mark['inline_keyboard'][1].pop()
+    await call.bot.send_message(call.from_user.id, text=reply_text, reply_markup=reply_mark)
 
 
 async def login(call: CallbackQuery | Message, state: FSMContext) -> None:
     # exist = await DB.user_exists(call.from_user.id)
     exist = bool(User.get_or_none(usertgID=call.from_user.id) is None)
+    reply_text = title_text("Логин") + "\n"
     if not exist:
         # user_login = await DB.get_userlogin(call.from_user.id)
         user = User.get(usertgID=call.from_user.id)
-        reply_text = f"Ваш Логин: {user.login}" + "\nДля изменения просто введите новый Логин."
+        reply_text += f"Ваш Логин: {user.login}" + "\nДля изменения просто введите новый Логин."
     else:
-        reply_text = ("Введите свой логин для игры")
+        reply_text += "Введите свой логин для игры"
     await call.bot.send_message(call.from_user.id, text=reply_text, reply_markup=get_login_kb())
     await state.set_state(States.waiting_enter_login)
-
-
-def title_text(string: str) -> str:
-    string = "#" * len(string) + "\n" + string + "\n" + "#" * len(string)
-    return string
 
 
 async def enter_login(msg: Message, state: FSMContext) -> None:
@@ -68,8 +66,48 @@ async def enter_login(msg: Message, state: FSMContext) -> None:
     await login(msg, state)
 
 
+async def list_classes(call: CallbackQuery | Message, state: FSMContext) -> None:
+    await state.finish()
+    reply_text = title_text("Специальности")
+    reply_mark = get_view_classes_kb()
+    user = User.get(usertgID=call.from_user.id)
+    if user.specialization is not None:
+        for i in range(len(reply_mark['inline_keyboard'])):
+            for j in range(len(reply_mark['inline_keyboard'][i])):
+                if reply_mark['inline_keyboard'][i][j]['text'] == user.specialization.name:
+                    reply_mark['inline_keyboard'][i][j]['text'] = "✅" + reply_mark['inline_keyboard'][i][j]['text']
+                    break
+                continue
+    await call.bot.send_message(call.from_user.id, text=reply_text, reply_markup=reply_mark)
+
+
+async def view_classes(call: CallbackQuery | Message, state: FSMContext) -> None:
+    reply_text = dict_classes[call.data]
+    spec = User.get(usertgID=call.from_user.id).specialization
+    reply_mark = get_enter_class_kb(call.data)
+    if spec is not None:
+        if spec.name == call.data:
+            reply_mark["inline_keyboard"][0][0]["text"] = "✅" + reply_mark["inline_keyboard"][0][0]["text"]
+    await call.bot.send_message(call.from_user.id, text=reply_text, reply_markup=reply_mark)
+    await state.set_state(States.waiting_enter_class)
+
+
+async def enter_class(call: CallbackQuery | Message, state: FSMContext) -> None:
+    user = User.get(usertgID=call.from_user.id)
+    if user.specialization is None or user.specialization.name != call.data:
+        user.specialization_id = Specialization.get(name=call.data).id
+        user.save()
+    await state.finish()
+    await view_classes(call, state)
+
+
 async def unknown(msg: Message):
     await msg.answer("Неизвестная команда!")
+
+
+def title_text(string: str) -> str:
+    string = "#" * len(string) + "\n" + string + "\n" + "#" * len(string)
+    return string
 
 
 def reg_handler(dp: Dispatcher) -> None:
@@ -77,6 +115,9 @@ def reg_handler(dp: Dispatcher) -> None:
     dp.register_message_handler(start_menu, commands=["main_menu"], state="*")
     dp.register_message_handler(login, commands=["login"], state="*")
     dp.register_callback_query_handler(login, Text(callbacks[0]), state="*")
+    dp.register_callback_query_handler(list_classes, Text(callbacks[2]), state="*")
+    dp.register_callback_query_handler(enter_class, Text(classes), state=States.waiting_enter_class)
+    dp.register_callback_query_handler(view_classes, Text(classes), state="*")
     dp.register_callback_query_handler(start_menu, Text(callbacks_back[0]), state="*")
     dp.register_message_handler(enter_login, state=States.waiting_enter_login)
 
