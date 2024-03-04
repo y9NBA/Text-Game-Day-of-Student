@@ -4,6 +4,6 @@ __pycache__
 
 venv
 
-.env
+*.db
 
-GameOfStudent_db.db
+.env

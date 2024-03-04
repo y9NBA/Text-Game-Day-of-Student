@@ -1,6 +1,6 @@
 from aiogram.utils.callback_data import CallbackData
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, ReplyKeyboardMarkup
-from DataBase.classes import dict_classes
+from DataBase.models import dict_classes
 
 
 callbacks = ["user_login", "profile", "view_classes"]

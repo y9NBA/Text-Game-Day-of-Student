@@ -5,13 +5,12 @@ from bot.keyboards.user_kb import *
 from DataBase.db import *
 from bot.states.user_states import *
 
-import time
 import re
 
 
 async def cmd_start(msg: Message, state: FSMContext) -> None:
     reply_text = f"Приветствуем вас, {msg.from_user.first_name}."
-    await msg.bot.set_chat_menu_button(msg.from_user.id, MenuButton())
+    await msg.bot.set_chat_menu_button(msg.from_user.id, None)
     await msg.bot.set_my_commands(commands=[
         BotCommand("main_menu", "Главное меню"),
         BotCommand("login", "Настройка логина")
@@ -23,21 +22,23 @@ async def cmd_start(msg: Message, state: FSMContext) -> None:
 async def start_menu(call: CallbackQuery | Message, state: FSMContext):
     await state.finish()
     reply_text = title_text("Главное меню")
-    exist = await DB.user_exists(call.from_user.id)
-    if not exist:
+    # exist = await DB.user_exists(call.from_user.id)
+    exist = bool(User.get_or_none(usertgID=call.from_user.id) is None)
+    if exist:
         reply_text += "\n"
         reply_text += "Нажмите на кнопку \"Логин\" и введите свой логин для игры."
     await call.bot.send_message(call.from_user.id, text=reply_text, reply_markup=get_start_kb())
 
 
 async def login(call: CallbackQuery | Message, state: FSMContext) -> None:
-    exist = await DB.user_exists(call.from_user.id)
-    if exist:
-        user_login = await DB.get_userlogin(call.from_user.id)
-        reply_text = f"Ваш Логин: {user_login}" + "\nДля изменения просто введите новый Логин."
+    # exist = await DB.user_exists(call.from_user.id)
+    exist = bool(User.get_or_none(usertgID=call.from_user.id) is None)
+    if not exist:
+        # user_login = await DB.get_userlogin(call.from_user.id)
+        user = User.get(usertgID=call.from_user.id)
+        reply_text = f"Ваш Логин: {user.login}" + "\nДля изменения просто введите новый Логин."
     else:
-        reply_text = ("Ваш логин должен содержать буквы латинского алфавита, также он может содержать цифры и " +
-                     "символы нижнего подчёркивания.")
+        reply_text = ("Введите свой логин для игры")
     await call.bot.send_message(call.from_user.id, text=reply_text, reply_markup=get_login_kb())
     await state.set_state(States.waiting_enter_login)
 
@@ -49,11 +50,16 @@ def title_text(string: str) -> str:
 
 async def enter_login(msg: Message, state: FSMContext) -> None:
     if re.match("^[a-zA-Z](.[a-zA-Z0-9_-]*)$", msg.text):
-        exist = await DB.user_exists(msg.from_user.id)
-        if exist:
-            await DB.update_userlogin(msg.from_user.id, msg.text)
+        # exist = await DB.user_exists(msg.from_user.id)
+        exist = bool(User.get_or_none(usertgID=msg.from_user.id) is None)
+        if not exist:
+            # await DB.update_userlogin(msg.from_user.id, msg.text)
+            user = User.get(usertgID=msg.from_user.id)
+            user.login = msg.text
+            user.save()
         else:
-            await DB.add_user(msg.from_user.id, msg.text)
+            # await DB.add_user
+            User.create(login=msg.text, usertgID=msg.from_user.id, role=2)
         await msg.answer("Логин успешно установлен")
     else:
         await msg.answer("Некорректный Логин\nВаш логин должен содержать буквы латинского алфавита, также он может содержать цифры и " +

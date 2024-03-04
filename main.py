@@ -24,7 +24,7 @@ async def main() -> None:
         await dp.start_polling(bot)
     except:
         await bot.session.close()
-        await bot.close_bot()
+        await bot.close()
         print("Bot is stop!")
 
 
