@@ -32,8 +32,8 @@ async def start_menu(call: CallbackQuery | Message, state: FSMContext):
 
 
 async def login(call: CallbackQuery | Message, state: FSMContext) -> None:
-    exist = bool(User.get_or_none(usertgID=call.from_user.id) is None)
     reply_text = title_text("Логин") + "\n"
+    exist = bool(User.get_or_none(usertgID=call.from_user.id) is None)
     if not exist:
         user = User.get(usertgID=call.from_user.id)
         reply_text += f"Ваш Логин: {user.login}" + "\nДля изменения просто введите новый Логин."
@@ -79,9 +79,8 @@ async def view_classes(call: CallbackQuery | Message, state: FSMContext) -> None
     reply_text = dict_classes[call.data]
     spec = User.get(usertgID=call.from_user.id).specialization
     reply_mark = get_enter_class_kb(call.data)
-    if spec is not None:
-        if spec.name == call.data:
-            reply_mark["inline_keyboard"][0][0]["text"] = "✅" + reply_mark["inline_keyboard"][0][0]["text"]
+    if spec is not None and spec.name == call.data:
+        reply_mark["inline_keyboard"][0][0]["text"] = "✅" + reply_mark["inline_keyboard"][0][0]["text"]
     await call.bot.send_message(call.from_user.id, text=reply_text, reply_markup=reply_mark)
     await state.set_state(States.waiting_enter_class)
 
@@ -89,10 +88,11 @@ async def view_classes(call: CallbackQuery | Message, state: FSMContext) -> None
 async def enter_class(call: CallbackQuery | Message, state: FSMContext) -> None:
     user = User.get(usertgID=call.from_user.id)
     if user.specialization is None or user.specialization.name != call.data:
+        print(1)
         user.specialization_id = Specialization.get(name=call.data).id
         user.save()
-    await state.finish()
-    await view_classes(call, state)
+        await state.finish()
+        await view_classes(call, state)
 
 
 async def unknown(msg: Message):

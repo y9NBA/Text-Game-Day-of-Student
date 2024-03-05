@@ -31,7 +31,7 @@ if len(db.get_tables()) != 3:
     print("[~] Таблицы БД были созданы")
     for x in dict_classes:
         class_u = Specialization.get_or_create(name=x)
-        print(f"[+] Запись 'role' [{class_u[0].id} {class_u[0].name}] " + ("добавлена" if class_u[1] else "обновлена"))
+        print(f"[+] Запись 'specialization' [{class_u[0].id} {class_u[0].name}] " + ("добавлена" if class_u[1] else "обновлена"))
 
     for x in ["Админ", "Игрок"]:
         role_u = Role.get_or_create(name=x)
