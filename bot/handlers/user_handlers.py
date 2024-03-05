@@ -88,7 +88,6 @@ async def view_classes(call: CallbackQuery | Message, state: FSMContext) -> None
 async def enter_class(call: CallbackQuery | Message, state: FSMContext) -> None:
     user = User.get(usertgID=call.from_user.id)
     if user.specialization is None or user.specialization.name != call.data:
-        print(1)
         user.specialization_id = Specialization.get(name=call.data).id
         user.save()
         await state.finish()
