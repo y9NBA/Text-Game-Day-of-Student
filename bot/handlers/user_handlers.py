@@ -23,7 +23,6 @@ async def start_menu(call: CallbackQuery | Message, state: FSMContext):
     await state.finish()
     reply_text = title_text("Главное меню")
     reply_mark = get_start_kb()
-    # exist = await DB.user_exists(call.from_user.id)
     exist = bool(User.get_or_none(usertgID=call.from_user.id) is None)
     if exist:
         reply_text += "\n"
@@ -33,11 +32,9 @@ async def start_menu(call: CallbackQuery | Message, state: FSMContext):
 
 
 async def login(call: CallbackQuery | Message, state: FSMContext) -> None:
-    # exist = await DB.user_exists(call.from_user.id)
     exist = bool(User.get_or_none(usertgID=call.from_user.id) is None)
     reply_text = title_text("Логин") + "\n"
     if not exist:
-        # user_login = await DB.get_userlogin(call.from_user.id)
         user = User.get(usertgID=call.from_user.id)
         reply_text += f"Ваш Логин: {user.login}" + "\nДля изменения просто введите новый Логин."
     else:
@@ -48,15 +45,12 @@ async def login(call: CallbackQuery | Message, state: FSMContext) -> None:
 
 async def enter_login(msg: Message, state: FSMContext) -> None:
     if re.match("^[a-zA-Z](.[a-zA-Z0-9_-]*)$", msg.text):
-        # exist = await DB.user_exists(msg.from_user.id)
         exist = bool(User.get_or_none(usertgID=msg.from_user.id) is None)
         if not exist:
-            # await DB.update_userlogin(msg.from_user.id, msg.text)
             user = User.get(usertgID=msg.from_user.id)
             user.login = msg.text
             user.save()
         else:
-            # await DB.add_user
             User.create(login=msg.text, usertgID=msg.from_user.id, role=2)
         await msg.answer("Логин успешно установлен")
     else:

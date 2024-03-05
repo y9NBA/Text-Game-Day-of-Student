@@ -14,7 +14,7 @@ async def main() -> None:
 
     storage = MemoryStorage()
 
-    token = os.getenv("TOKEN")
+    token = os.getenv("TOKEN_ORIGIN")
     bot = Bot(token)
     dp = Dispatcher(bot, storage=storage)
     
